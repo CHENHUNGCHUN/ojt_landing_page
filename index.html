@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>筆記聯盟 · 你的筆記應該要越寫越強</title>
+  <meta name="description" content="一套把筆記變系統的方法。學霸親自教你怎麼寫，再用 AI 幫你整理、複習、出題——讓你的筆記越寫越強。">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&family=Noto+Serif+TC:wght@700;900&family=Caveat:wght@700&display=swap" rel="stylesheet">
+
+  <style>
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; padding: 0; background: #F5EFE1; }
+    * { box-sizing: border-box; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Nav link hover */
+    nav a { transition: opacity 0.18s; }
+    nav a:hover { opacity: 0.55; }
+
+    /* CTA hover */
+    .cta-primary {
+      transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+    }
+    .cta-primary:hover {
+      transform: translateY(-3px) !important;
+    }
+    .cta-secondary {
+      transition: background 0.18s ease, transform 0.18s ease !important;
+    }
+    .cta-secondary:hover {
+      background: #F0EAD8 !important;
+      transform: translateY(-2px) !important;
+    }
+
+    /* Pain card hover */
+    .pain-card {
+      transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+    }
+    .pain-card:hover {
+      transform: rotate(0deg) translateY(-6px) !important;
+      box-shadow: 0 20px 40px rgba(60,45,20,0.18) !important;
+      z-index: 10;
+      position: relative;
+    }
+
+    /* Step card hover */
+    .step-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .step-card:hover {
+      transform: translateY(-4px) !important;
+      box-shadow: 8px 8px 0 0 #C24A2C !important;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #EEE5D0; }
+    ::-webkit-scrollbar-thumb { background: #8A8578; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4A4A44; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- ===== 在這裡設定你的連結與筆記圖片 ===== -->
+  <script>
+    const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd2pzyt2Iy9PtYHTt9Gqk62Cpq-XbrP_5aq5QaHkUWlUdupXA/viewform?usp=publish-editor';  // 換成你的問卷連結，例如: 'https://forms.gle/xxxxx'
+    const YT_URL   = '';   // 換成 YouTube 網址，例如: 'https://youtu.be/xxxxx'
+
+    // 筆記對比圖設定
+    // before：原始雜亂筆記；after：整理後的筆記
+    // 每個科目各自有獨立的 before / after gallery
+    const NOTES = [
+
+      {
+        subject: '生物',
+        before: [
+          'images/before-1.jpg',
+          'images/before-2.jpg',
+          'images/before-3.jpg'  // 加圖就取消註解
+        ],
+        after: [
+          'images/after-1.jpg',
+          'images/after-2.jpg',
+        ],
+      },
+
+      // ── 之後要加的科目，取消整塊註解即可 ──
+
+      // {
+      //   subject: '國文',
+      //   before: ['images/chinese-before-1.jpg'],
+      //   after:  ['images/chinese-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '數學',
+      //   before: ['images/math-before-1.jpg'],
+      //   after:  ['images/math-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '英文',
+      //   before: ['images/english-before-1.jpg'],
+      //   after:  ['images/english-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '歷史',
+      //   before: ['images/history-before-1.jpg'],
+      //   after:  ['images/history-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '地理',
+      //   before: ['images/geo-before-1.jpg'],
+      //   after:  ['images/geo-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '化學',
+      //   before: ['images/chem-before-1.jpg'],
+      //   after:  ['images/chem-after-1.jpg'],
+      // },
+
+      // {
+      //   subject: '物理',
+      //   before: ['images/physics-before-1.jpg'],
+      //   after:  ['images/physics-after-1.jpg'],
+      // },
+
+    ];
+  </script>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    // ── 色票 ──────────────────────────────────────────
+    const v1 = {
+      paper:       '#F5EFE1',
+      paperDark:   '#EEE5D0',
+      ink:         '#2B2B2B',
+      inkSoft:     '#4A4A44',
+      muted:       '#8A8578',
+      rule:        '#D8CFB8',
+      accent:      '#C24A2C',
+      accentYellow:'#F2C94C',
+      accentBlue:  '#4A6FA5',
+      tapePink:    'rgba(232, 157, 157, 0.72)',
+      tapeYellow:  'rgba(242, 201, 76, 0.62)',
+    };
+
+    // ── 小元件 ────────────────────────────────────────
+    const Tape = ({ style, color = v1.tapeYellow, rotate = -4, children }) => (
+      <div style={{
+        position: 'absolute', background: color,
+        boxShadow: '0 1px 0 rgba(0,0,0,0.04)',
+        transform: `rotate(${rotate}deg)`, mixBlendMode: 'multiply', ...style,
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 6px)',
+        }}/>
+        {children}
+      </div>
+    );
+
+    const HandWritten = ({ children, size = 28, color = v1.accent, rotate = -3, style }) => (
+      <span style={{
+        fontFamily: '"Caveat", cursive', fontWeight: 700, fontSize: size,
+        color, display: 'inline-block', transform: `rotate(${rotate}deg)`,
+        lineHeight: 1, ...style,
+      }}>{children}</span>
+    );
+
+    const Arrow = ({ w = 80, color = v1.accent, style }) => (
+      <svg width={w} height="30" viewBox="0 0 80 30" style={style}>
+        <path d="M4 20 C 20 4, 50 30, 74 12" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M66 8 L74 12 L70 20" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    );
+
+    const Scribble = ({ w = 180, color = v1.accentYellow, style }) => (
+      <svg width={w} height="14" viewBox="0 0 180 14" style={style}>
+        <path d="M2 9 C 30 2, 60 13, 90 7 S 150 3, 178 9"
+          fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" opacity="0.75"/>
+      </svg>
+    );
+
+    // ── GalleryPanel：單側翻頁圖片區 ────────────────
+    function GalleryPanel({ label, labelColor, images, idx, setIdx, onOpen }) {
+      const canPrev = idx > 0;
+      const canNext = idx < images.length - 1;
+      const btnBase = {
+        background: 'none', border: `1.5px solid ${v1.ink}`,
+        width: 36, height: 36, cursor: 'pointer',
+        fontSize: 16, fontFamily: '"Noto Sans TC", sans-serif',
+        display: 'grid', placeItems: 'center',
+        transition: 'background 0.15s',
+      };
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* 標籤 */}
+          <div style={{
+            alignSelf: 'flex-start', marginBottom: 12,
+            background: labelColor, color: '#FFFDF6',
+            padding: '5px 14px', fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
+          }}>{label}</div>
+
+          {/* 圖片框（膠帶裝飾） */}
+          <div style={{ position: 'relative', background: '#FFFDF6', padding: 12, flex: 1,
+            boxShadow: '0 8px 24px rgba(60,45,20,0.14)', }}>
+            <Tape style={{ top: -13, left: '30%', width: 80, height: 22, zIndex: 2 }}
+              color={labelColor === v1.accent ? v1.tapeYellow : v1.tapePink} rotate={-3}/>
+            <img
+              src={images[idx]}
+              onClick={() => onOpen(images[idx])}
+              style={{ width: '100%', display: 'block', cursor: 'zoom-in',
+                transition: 'transform 0.2s', minHeight: 200, objectFit: 'contain' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.015)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            />
+          </div>
+
+          {/* 翻頁控制 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+            <button
+              onClick={() => setIdx(i => i - 1)} disabled={!canPrev}
+              style={{ ...btnBase, opacity: canPrev ? 1 : 0.3, color: v1.ink }}
+              onMouseEnter={e => { if (canPrev) e.currentTarget.style.background = v1.paperDark; }}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >←</button>
+            <span style={{ fontFamily: '"Caveat", cursive', fontSize: 22, color: v1.muted }}>
+              {idx + 1} / {images.length}
+            </span>
+            <button
+              onClick={() => setIdx(i => i + 1)} disabled={!canNext}
+              style={{ ...btnBase, opacity: canNext ? 1 : 0.3, color: v1.ink }}
+              onMouseEnter={e => { if (canNext) e.currentTarget.style.background = v1.paperDark; }}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >→</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── NoteGallery：主元件 ───────────────────────────
+    function NoteGallery({ notes }) {
+      const [subjectIdx, setSubjectIdx] = useState(0);
+      const [beforeIdx, setBeforeIdx] = useState(0);
+      const [afterIdx, setAfterIdx]   = useState(0);
+      const [lightbox, setLightbox]   = useState(null); // { src, side }
+
+      const subject = notes[subjectIdx];
+
+      useEffect(() => { setBeforeIdx(0); setAfterIdx(0); }, [subjectIdx]);
+
+      return (
+        <div>
+          {/* 標題 */}
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: '"Caveat", cursive', fontSize: 28, color: v1.accent,
+              marginBottom: 4, transform: 'rotate(-2deg)', display: 'inline-block' }}>
+              real notes, real students
+            </div>
+            <h2 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 44, fontWeight: 900,
+              color: v1.ink, margin: '0 0 10px', letterSpacing: '-0.01em' }}>
+              翻一翻學霸的<span style={{ background: `linear-gradient(180deg, transparent 60%, ${v1.accentYellow} 60%)` }}>真實筆記</span>
+            </h2>
+            <p style={{ color: v1.inkSoft, fontSize: 17, margin: 0, maxWidth: 520 }}>
+              左邊是原始雜亂版，右邊是整理後的版本。點圖可以放大看。
+            </p>
+          </div>
+
+          {/* 科目切換 tabs（超過一個科目才顯示） */}
+          {notes.length > 1 && (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 36, flexWrap: 'wrap' }}>
+              {notes.map((n, i) => (
+                <button key={i} onClick={() => setSubjectIdx(i)} style={{
+                  background: subjectIdx === i ? v1.ink : '#FFFDF6',
+                  color: subjectIdx === i ? v1.paper : v1.ink,
+                  border: `1.5px solid ${v1.ink}`,
+                  padding: '8px 20px', fontSize: 14, fontWeight: 700,
+                  cursor: 'pointer', fontFamily: '"Noto Sans TC", sans-serif',
+                  transition: 'background 0.18s, color 0.18s',
+                }}>{n.subject}</button>
+              ))}
+            </div>
+          )}
+
+          {/* 左右 Gallery */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+            <GalleryPanel
+              label="BEFORE · 原始筆記"
+              labelColor={v1.inkSoft}
+              images={subject.before}
+              idx={beforeIdx}
+              setIdx={setBeforeIdx}
+              onOpen={src => setLightbox({ src, side: 'before' })}
+            />
+            <GalleryPanel
+              label="AFTER · 整理後筆記"
+              labelColor={v1.accent}
+              images={subject.after}
+              idx={afterIdx}
+              setIdx={setAfterIdx}
+              onOpen={src => setLightbox({ src, side: 'after' })}
+            />
+          </div>
+
+          {/* Lightbox */}
+          {lightbox && (
+            <div
+              onClick={() => setLightbox(null)}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 1000,
+                background: 'rgba(20,18,14,0.92)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 24, cursor: 'zoom-out',
+              }}>
+              <div onClick={e => e.stopPropagation()} style={{ position: 'relative', cursor: 'default' }}>
+                <button onClick={() => setLightbox(null)} style={{
+                  position: 'absolute', top: -44, right: 0,
+                  background: 'transparent', color: '#fff', border: 'none',
+                  fontSize: 22, cursor: 'pointer', fontFamily: '"Noto Sans TC", sans-serif',
+                }}>✕ 關閉</button>
+                <div style={{
+                  background: '#FFFDF6', padding: 12,
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+                }}>
+                  <div style={{
+                    position: 'absolute', top: -14, left: 16, zIndex: 3,
+                    background: lightbox.side === 'after' ? v1.accent : v1.inkSoft,
+                    color: v1.paper, padding: '4px 12px',
+                    fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
+                  }}>{lightbox.side === 'after' ? 'AFTER · 整理後' : 'BEFORE · 原始'}</div>
+                  <img src={lightbox.src} style={{
+                    maxHeight: '85vh', maxWidth: '90vw', display: 'block',
+                  }}/>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ── LandingV1 主頁 ────────────────────────────────
+    function LandingV1({ formUrl = '#', ytUrl = '' }) {
+      const ytEmbed = ytUrl
+        ? ytUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+        : '';
+
+      useEffect(() => {
+        // Scroll reveal：所有 section 淡入
+        const obs = new IntersectionObserver(
+          entries => entries.forEach(e => {
+            if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
+          }),
+          { threshold: 0.06, rootMargin: '0px 0px -40px 0px' }
+        );
+        document.querySelectorAll('section').forEach(el => {
+          el.classList.add('reveal');
+          obs.observe(el);
+        });
+
+        // Sticky nav 陰影
+        const onScroll = () => {
+          const nav = document.querySelector('nav');
+          if (nav) nav.style.boxShadow = window.scrollY > 40
+            ? '0 4px 20px rgba(43,43,43,0.13)'
+            : '';
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => { obs.disconnect(); window.removeEventListener('scroll', onScroll); };
+      }, []);
+
+      return (
+        <div style={{
+          background: v1.paper, color: v1.ink,
+          fontFamily: '"Noto Sans TC", sans-serif', minHeight: '100vh',
+          backgroundImage: `
+            radial-gradient(circle at 20% 30%, rgba(139,114,69,0.06) 0, transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(139,114,69,0.05) 0, transparent 50%)
+          `,
+        }}>
+
+          {/* ── NAV ── */}
+          <nav style={{
+            padding: '18px 60px', display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', borderBottom: `1px solid ${v1.rule}`,
+            position: 'sticky', top: 0, zIndex: 100,
+            background: 'rgba(245,239,225,0.96)', backdropFilter: 'blur(10px)',
+            transition: 'box-shadow 0.3s ease',
+          }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{
+                width: 32, height: 32, background: v1.ink, color: v1.paper,
+                display: 'grid', placeItems: 'center', fontFamily: '"Noto Serif TC", serif',
+                fontWeight: 900, fontSize: 16,
+              }}>聯</div>
+              <div style={{ fontFamily: '"Noto Serif TC", serif', fontWeight: 900, fontSize: 18 }}>筆記聯盟</div>
+            </div>
+            <div style={{ display: 'flex', gap: 28, fontSize: 13, color: v1.inkSoft }}>
+              {[['#pain','痛點'],['#flow','流程'],['#notes','範例'],['#video','影片']].map(([href, label]) => (
+                <a key={href} href={href} style={{ color: 'inherit' }}>{label}</a>
+              ))}
+            </div>
+            <a href={formUrl} className="cta-primary" style={{
+              background: v1.ink, color: v1.paper, padding: '8px 18px',
+              fontSize: 13, fontWeight: 700,
+              boxShadow: `3px 3px 0 0 ${v1.accent}`,
+              display: 'inline-block',
+            }}>填問卷</a>
+          </nav>
+
+          {/* ── HERO ── */}
+          <section style={{ padding: '80px 60px 100px', position: 'relative' }}>
+            <div style={{ maxWidth: 1300, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+              <div>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  background: '#FFFDF6', border: `1.5px solid ${v1.ink}`,
+                  padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                  letterSpacing: '0.1em', marginBottom: 28,
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: v1.accent }}/>
+                  ROUND 01 · 驗證中
+                </div>
+                <h1 style={{
+                  fontFamily: '"Noto Serif TC", serif', fontSize: 80, fontWeight: 900,
+                  lineHeight: 1.05, letterSpacing: '-0.02em', margin: 0,
+                }}>
+                  你的筆記應該要<br/>
+                  <span style={{ color: v1.accent, fontStyle: 'italic' }}>越寫越強</span>
+                  <span style={{ position: 'relative' }}>
+                    
+                    <svg width="340" height="14" viewBox="0 0 340 14" style={{ position: 'absolute', left: -4, bottom: -10 }}>
+                      <path d="M4 9 C 80 2, 180 13, 336 7" fill="none" stroke={v1.accentYellow} strokeWidth="8" strokeLinecap="round"/>
+                    </svg>
+                  </span>
+                </h1>
+                <p style={{ fontSize: 19, lineHeight: 1.7, color: v1.inkSoft, marginTop: 36, maxWidth: 540 }}>
+                  一套把筆記變系統的方法。<strong>學霸親自教你怎麼寫</strong>，
+                  再用 AI 幫你整理、複習、出題——
+                  讓你的筆記變成可查詢、可累積、<strong>考前會救你一命</strong>的個人知識庫。
+                </p>
+                <div style={{ display: 'flex', gap: 16, marginTop: 44 }}>
+                  <a href="#final-cta" className="cta-primary" style={{
+                    background: v1.ink, color: v1.paper, padding: '18px 32px',
+                    fontSize: 16, fontWeight: 700,
+                    display: 'inline-flex', alignItems: 'center', gap: 10,
+                    boxShadow: `5px 5px 0 0 ${v1.accent}`,
+                  }}>
+                    加入體驗名單 <span>→</span>
+                  </a>
+                  <a href="#notes" className="cta-secondary" style={{
+                    background: '#FFFDF6', color: v1.ink,
+                    border: `1.5px solid ${v1.ink}`,
+                    padding: '18px 28px', fontSize: 16, fontWeight: 600,
+                  }}>
+                    看筆記範例
+                  </a>
+                </div>
+
+                <div style={{ marginTop: 64, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+                  {[
+                    { k: '2–3', v: '位學霸' },
+                    { k: '6–8', v: '堂線上課' },
+                    { k: '6',   v: '個學科模板' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ borderLeft: `2px solid ${v1.ink}`, paddingLeft: 14 }}>
+                      <div style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 36, fontWeight: 900, lineHeight: 1 }}>{s.k}</div>
+                      <div style={{ fontSize: 12, color: v1.muted, marginTop: 4, letterSpacing: '0.05em' }}>{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hero 右側：疊起來的科目資料夾 */}
+              <div style={{ position: 'relative', height: 520 }}>
+                {[
+                  { name: '國文', color: v1.accent },
+                  { name: '數學', color: v1.accentBlue },
+                  { name: '英文', color: '#4E7A4A' },
+                  { name: '歷史', color: v1.accentYellow },
+                ].map((s, i) => {
+                  const rot = [-6, -2, 2, 6][i];
+                  return (
+                    <div key={s.name} style={{
+                      position: 'absolute', top: i * 40, left: i * 20,
+                      width: 380, height: 460,
+                      background: '#FFFDF6', border: `1.5px solid ${v1.ink}`,
+                      transform: `rotate(${rot}deg)`,
+                      boxShadow: '0 10px 20px rgba(0,0,0,0.08)',
+                      padding: 24, zIndex: 10 - i,
+                      transition: 'transform 0.3s ease',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = `rotate(0deg) translateY(-8px)`}
+                    onMouseLeave={e => e.currentTarget.style.transform = `rotate(${rot}deg)`}
+                    >
+                      <div style={{
+                        position: 'absolute', top: -28, left: 20,
+                        background: s.color, color: '#FFFDF6',
+                        padding: '6px 20px 10px', fontFamily: '"Noto Serif TC", serif',
+                        fontWeight: 900, fontSize: 15, letterSpacing: '0.05em',
+                        clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)',
+                        minWidth: 80, textAlign: 'center',
+                      }}>{s.name}</div>
+                      <div style={{ paddingTop: 8, width: '100%', height: '100%' }}>
+                        <div style={{
+                          width: '100%', height: '100%',
+                          background: `repeating-linear-gradient(180deg, transparent 0 18px, ${v1.rule} 18px 19px), #FFFDF6`,
+                          padding: '20px 18px', position: 'relative',
+                        }}>
+                          <div style={{ position: 'absolute', left: 36, top: 0, bottom: 0, width: 1, background: `${s.color}66` }}/>
+                          <div style={{
+                            fontFamily: '"Noto Serif TC", serif', fontWeight: 900,
+                            fontSize: 14, color: v1.ink, display: 'inline-block',
+                            borderBottom: `2px solid ${s.color}`, paddingBottom: 4, marginBottom: 8,
+                          }}>{s.name}</div>
+                          <div style={{ fontSize: 7, lineHeight: '19px', color: v1.inkSoft }}>
+                            {Array.from({ length: 14 }).map((_, j) => {
+                              const w = 40 + ((j * 17 + i * 13) % 55);
+                              const hi = j % 4 === 1;
+                              return (
+                                <div key={j} style={{ display: 'flex', gap: 5 }}>
+                                  {j % 3 === 0 && <span style={{ color: s.color, fontWeight: 900 }}>▪</span>}
+                                  <div style={{
+                                    height: 4, width: `${w}%`,
+                                    background: hi ? v1.accentYellow : v1.inkSoft,
+                                    opacity: hi ? 0.7 : 0.5, borderRadius: 1,
+                                  }}/>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* ── PAIN POINTS ── */}
+          <section id="pain" style={{ padding: '100px 60px', background: v1.paperDark, position: 'relative' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                <HandWritten size={28} rotate={-2}>呃⋯⋯是不是超有感</HandWritten>
+                <h2 style={{
+                  fontFamily: '"Noto Serif TC", serif', fontSize: 56, fontWeight: 900,
+                  margin: '12px 0 0', letterSpacing: '-0.01em',
+                }}>
+                  做筆記的<span style={{ color: v1.accent }}>四大地獄</span>
+                </h2>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 32 }}>
+                {[
+                  { num: '01', title: '做了，但沒用', desc: '花了一整晚抄得超美，考前翻開才發現——根本看不懂自己在寫什麼。', tape: v1.tapePink, rot: -1 },
+                  { num: '02', title: '抓不到重點', desc: '老師一講就全部寫下來，結果每一頁都滿滿的字，到底哪個才是重點？', tape: v1.tapeYellow, rot: 1.5 },
+                  { num: '03', title: '不會複習', desc: '筆記做完就收進抽屜。考前兩週翻出來，根本不知道從哪看起。', tape: 'rgba(180,200,230,0.7)', rot: -1.5 },
+                  { num: '04', title: '亂到懷疑人生', desc: '國文跟歷史筆記混在一起，錯題本跟講義不知道分開，最後只好全部重抄。', tape: 'rgba(200,220,180,0.7)', rot: 1 },
+                ].map((p, i) => (
+                  <div key={i} className="pain-card" style={{
+                    background: '#FFFDF6', padding: '40px 36px 36px', position: 'relative',
+                    transform: `rotate(${p.rot}deg)`,
+                    boxShadow: '0 12px 28px rgba(60,45,20,0.12)',
+                  }}>
+                    <Tape style={{ top: -16, left: 30, width: 90, height: 26 }} color={p.tape} rotate={-4}/>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 14 }}>
+                      <span style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 48, fontWeight: 900, color: v1.accent, lineHeight: 1 }}>{p.num}</span>
+                      <h3 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 32, fontWeight: 900, margin: 0, letterSpacing: '-0.01em' }}>{p.title}</h3>
+                    </div>
+                    <p style={{ fontSize: 17, color: v1.inkSoft, lineHeight: 1.8, margin: 0 }}>{p.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── AI FLOW ── */}
+          <section id="flow" style={{ padding: '120px 60px', position: 'relative' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <div style={{ marginBottom: 72 }}>
+                <HandWritten size={28} rotate={-2} color={v1.accentBlue}>只要 4 步</HandWritten>
+                <h2 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 56, fontWeight: 900, margin: '8px 0 12px', letterSpacing: '-0.01em' }}>
+                  從<span style={{ color: v1.accent }}>講義</span>變成
+                  <span style={{ background: `linear-gradient(180deg, transparent 60%, ${v1.accentYellow} 60%)` }}>你自己的筆記</span>
+                </h2>
+                <p style={{ fontSize: 18, color: v1.inkSoft, maxWidth: 640 }}>
+                  不是把筆記丟給 AI 就好。我們幫你設計一套可重複使用的流程，讓 AI 做整理、你做理解。
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, position: 'relative' }}>
+                {[
+                  { n: '1', title: '丟進講義',   desc: '把課本 / 講義 / 上課筆記直接上傳，不用改格式。', hand: '丟就對了' },
+                  { n: '2', title: 'AI 抓重點',  desc: '我們訓練過的 RAG 會依學科模板整理出大標、副標、重點。', hand: '抓出關鍵' },
+                  { n: '3', title: '你來微調',   desc: '搭配學霸課程學會「怎麼判斷重點」，親手修到真正屬於你的版本。', hand: '加上你的腦' },
+                  { n: '4', title: '累積知識庫', desc: '筆記可查詢、可出題、可錯題分析，越用越強。', hand: 'Lv. Up ↑' },
+                ].map((s, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <div className="step-card" style={{
+                      background: '#FFFDF6', border: `1.5px solid ${v1.ink}`,
+                      padding: '28px 24px 32px', minHeight: 280, position: 'relative',
+                      boxShadow: `5px 5px 0 0 ${v1.ink}`,
+                    }}>
+                      <div style={{ fontFamily: '"Noto Serif TC", serif', fontWeight: 900, fontSize: 72, color: v1.accent, lineHeight: 1, marginBottom: 8 }}>{s.n}</div>
+                      <h3 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 26, fontWeight: 900, margin: '0 0 12px' }}>{s.title}</h3>
+                      <p style={{ fontSize: 15, color: v1.inkSoft, lineHeight: 1.7, margin: 0 }}>{s.desc}</p>
+                      <div style={{ position: 'absolute', bottom: 12, right: 16 }}>
+                        <HandWritten size={20} color={v1.accentBlue} rotate={-6}>{s.hand}</HandWritten>
+                      </div>
+                    </div>
+                    {i < 3 && (
+                      <Arrow color={v1.accent} w={40} style={{ position: 'absolute', right: -28, top: 130, zIndex: 2 }}/>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── NOTES GALLERY ── */}
+          <section id="notes" style={{
+            padding: '120px 60px', background: v1.paperDark,
+            backgroundImage: `repeating-linear-gradient(0deg, transparent 0 40px, ${v1.rule}88 40px 41px)`,
+          }}>
+            <div style={{ maxWidth: 1300, margin: '0 auto' }}>
+              <NoteGallery notes={NOTES}/>
+            </div>
+          </section>
+
+          {/* ── VIDEO ── */}
+          <section id="video" style={{ padding: '120px 60px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, flexWrap: 'wrap', gap: 20 }}>
+                <div>
+                  <HandWritten size={28} rotate={-2} color={v1.accent}>Ep.01 · 試看片段</HandWritten>
+                  <h2 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 56, fontWeight: 900, margin: '8px 0 12px', letterSpacing: '-0.01em' }}>
+                    學霸親自示範，<br/>怎麼把一節課寫成一頁筆記
+                  </h2>
+                  <p style={{ fontSize: 17, color: v1.inkSoft, maxWidth: 520 }}>
+                    從文具準備、上課聽講、抓重點到回家整理——每一步都有邏輯，不是天賦。
+                  </p>
+                </div>
+                <div style={{
+                  background: '#FFFDF6', border: `1.5px dashed ${v1.ink}`,
+                  padding: '18px 24px', transform: 'rotate(2deg)',
+                }}>
+                  <div style={{ fontSize: 12, color: v1.muted, letterSpacing: '0.1em', marginBottom: 4 }}>THIS EPISODE</div>
+                  <div style={{ fontFamily: '"Noto Serif TC", serif', fontWeight: 900, fontSize: 18, marginBottom: 2 }}>生物 / 細胞週期</div>
+                  <div style={{ fontSize: 13, color: v1.inkSoft }}>主講 · 丹尼爾</div>
+                </div>
+              </div>
+
+              <div style={{ position: 'relative', padding: '30px 0' }}>
+                <div style={{
+                  position: 'relative', background: '#FFFDF6',
+                  padding: 18, paddingBottom: 60,
+                  boxShadow: '0 20px 40px rgba(60,45,20,0.2)',
+                  maxWidth: 1000, margin: '0 auto',
+                }}>
+                  <Tape style={{ top: -16, left: '12%', width: 120, height: 28 }} color={v1.tapeYellow} rotate={-3}/>
+                  <Tape style={{ top: -16, right: '14%', width: 120, height: 28 }} color={v1.tapePink} rotate={4}/>
+                  <div style={{ position: 'relative', aspectRatio: '16/9', background: '#111', overflow: 'hidden' }}>
+                    {ytEmbed ? (
+                      <iframe src={ytEmbed} style={{ width: '100%', height: '100%', border: 0 }} allowFullScreen/>
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%',
+                        background: 'linear-gradient(135deg, #2B2B2B 0%, #4A4A44 100%)',
+                        display: 'grid', placeItems: 'center',
+                        color: v1.paper, fontFamily: '"Noto Serif TC", serif',
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{
+                            width: 80, height: 80, borderRadius: '50%', background: v1.accent,
+                            display: 'grid', placeItems: 'center', margin: '0 auto 16px',
+                          }}>
+                            <div style={{ width: 0, height: 0, borderLeft: '24px solid white', borderTop: '14px solid transparent', borderBottom: '14px solid transparent', marginLeft: 6 }}/>
+                          </div>
+                          <div style={{ fontSize: 24, fontWeight: 900 }}>YouTube 影片預留位置</div>
+                          <div style={{ fontSize: 13, color: 'rgba(245,239,225,0.6)', marginTop: 6, fontFamily: '"Noto Sans TC", sans-serif' }}>
+                            之後會嵌入學霸真人教學
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{
+                    position: 'absolute', bottom: 18, left: 24,
+                    fontFamily: '"Caveat", cursive', fontSize: 22, color: v1.inkSoft,
+                  }}>學霸告訴你甚麼叫做筆記</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ maxWidth: 1000, margin: '60px auto 0', textAlign: 'center' }}>
+              <a href={formUrl} className="cta-primary" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 12,
+                background: v1.ink, color: v1.paper,
+                padding: '22px 44px', fontSize: 19, fontWeight: 800,
+                letterSpacing: '-0.01em',
+                boxShadow: `6px 6px 0 0 ${v1.accent}`,
+                fontFamily: '"Noto Serif TC", serif',
+              }}>
+                填寫付費意願問卷 <span>→</span>
+              </a>
+              <div style={{ marginTop: 14, fontSize: 13, color: v1.muted }}>
+                看完影片了？花 2 分鐘告訴我們你的想法
+              </div>
+            </div>
+          </section>
+
+        </div>
+      );
+    }
+
+    // ── Render ──
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      React.createElement(LandingV1, { formUrl: FORM_URL, ytUrl: YT_URL })
+    );
+  </script>
+</body>
+</html>
