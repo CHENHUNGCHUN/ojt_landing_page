@@ -79,6 +79,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
   <!-- ===== 在這裡設定你的連結與筆記圖片 ===== -->
   <script>
@@ -262,6 +263,73 @@
       );
     }
 
+    // ── LightboxWithPanzoom ───────────────────────────
+    function LightboxWithPanzoom({ lightbox, onClose }) {
+      const imgRef     = useRef(null);
+      const wrapRef    = useRef(null);
+      const panzoomRef = useRef(null);
+
+      useEffect(() => {
+        if (!imgRef.current || !window.Panzoom) return;
+        panzoomRef.current = window.Panzoom(imgRef.current, {
+          maxScale: 8, minScale: 0.5, contain: 'outside',
+        });
+        const wrap = wrapRef.current;
+        wrap.addEventListener('wheel', panzoomRef.current.zoomWithWheel);
+        return () => {
+          wrap.removeEventListener('wheel', panzoomRef.current.zoomWithWheel);
+          panzoomRef.current.destroy();
+        };
+      }, []);
+
+      return (
+        <div onClick={onClose} style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(20,18,14,0.92)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: 'relative' }}>
+            {/* 上方控制列 */}
+            <div style={{ position: 'absolute', top: -44, left: 0, right: 0,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(245,239,225,0.45)', fontSize: 12,
+                fontFamily: '"Noto Sans TC", sans-serif' }}>
+                滾輪縮放 · 拖拉移動
+              </span>
+              <button onClick={onClose} style={{
+                background: 'transparent', color: '#fff', border: 'none',
+                fontSize: 22, cursor: 'pointer', fontFamily: '"Noto Sans TC", sans-serif',
+              }}>✕ 關閉</button>
+            </div>
+
+            {/* 標籤 */}
+            <div style={{
+              position: 'absolute', top: -14, left: 16, zIndex: 3,
+              background: lightbox.side === 'after' ? v1.accent : v1.inkSoft,
+              color: v1.paper, padding: '4px 12px',
+              fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
+            }}>{lightbox.side === 'after' ? 'AFTER · 整理後' : 'BEFORE · 原始'}</div>
+
+            {/* 圖片容器 */}
+            <div ref={wrapRef} style={{
+              background: '#FFFDF6', padding: 12,
+              boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+              overflow: 'hidden', cursor: 'grab',
+              maxWidth: '95vw', maxHeight: '95vh',
+            }}
+            onMouseDown={e => e.currentTarget.style.cursor = 'grabbing'}
+            onMouseUp={e => e.currentTarget.style.cursor = 'grab'}
+            >
+              <img ref={imgRef} src={lightbox.src} style={{
+                display: 'block', maxHeight: '88vh', maxWidth: '90vw',
+                userSelect: 'none',
+              }}/>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ── NoteGallery：主元件 ───────────────────────────
     function NoteGallery({ notes }) {
       const [subjectIdx, setSubjectIdx] = useState(0);
@@ -286,7 +354,7 @@
               翻一翻學霸的<span style={{ background: `linear-gradient(180deg, transparent 60%, ${v1.accentYellow} 60%)` }}>真實筆記</span>
             </h2>
             <p style={{ color: v1.inkSoft, fontSize: 17, margin: 0, maxWidth: 520 }}>
-              左邊是原始雜亂版，右邊是整理後的版本。點圖可以放大看。
+              左邊是原始教科書或參考書，右邊是整理後的版本。點圖可以放大看。
             </p>
           </div>
 
@@ -309,7 +377,7 @@
           {/* 左右 Gallery */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
             <GalleryPanel
-              label="BEFORE · 原始筆記"
+              label="BEFORE · 教科書或參考書"
               labelColor={v1.inkSoft}
               images={subject.before}
               idx={beforeIdx}
@@ -327,38 +395,7 @@
           </div>
 
           {/* Lightbox */}
-          {lightbox && (
-            <div
-              onClick={() => setLightbox(null)}
-              style={{
-                position: 'fixed', inset: 0, zIndex: 1000,
-                background: 'rgba(20,18,14,0.92)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 24, cursor: 'zoom-out',
-              }}>
-              <div onClick={e => e.stopPropagation()} style={{ position: 'relative', cursor: 'default' }}>
-                <button onClick={() => setLightbox(null)} style={{
-                  position: 'absolute', top: -44, right: 0,
-                  background: 'transparent', color: '#fff', border: 'none',
-                  fontSize: 22, cursor: 'pointer', fontFamily: '"Noto Sans TC", sans-serif',
-                }}>✕ 關閉</button>
-                <div style={{
-                  background: '#FFFDF6', padding: 12,
-                  boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
-                }}>
-                  <div style={{
-                    position: 'absolute', top: -14, left: 16, zIndex: 3,
-                    background: lightbox.side === 'after' ? v1.accent : v1.inkSoft,
-                    color: v1.paper, padding: '4px 12px',
-                    fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
-                  }}>{lightbox.side === 'after' ? 'AFTER · 整理後' : 'BEFORE · 原始'}</div>
-                  <img src={lightbox.src} style={{
-                    maxHeight: '85vh', maxWidth: '90vw', display: 'block',
-                  }}/>
-                </div>
-              </div>
-            </div>
-          )}
+          {lightbox && <LightboxWithPanzoom lightbox={lightbox} onClose={() => setLightbox(null)} />}
         </div>
       );
     }
