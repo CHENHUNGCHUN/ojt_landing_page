@@ -76,83 +76,43 @@
 <body>
   <div id="root"></div>
 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> -->
+  <!-- 引入支援原生 ES Module 的 React 18 腳本 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+      }
+    }
+  </script>
   <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
 
   <!-- ===== 在這裡設定你的連結與筆記圖片 ===== -->
   <script>
-    const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd2pzyt2Iy9PtYHTt9Gqk62Cpq-XbrP_5aq5QaHkUWlUdupXA/viewform?usp=publish-editor';  // 換成你的問卷連結，例如: 'https://forms.gle/xxxxx'
+    const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd2pzyt2Iy9PtYHTt9Gqk62Cpq-XbrP_5aq5QaHkUWlUdupXA/viewform?usp=publish-editor';
     const YT_URL   = 'https://youtu.be/u2c2AF9ncDg';
 
-    // 筆記對比圖設定
-    // before：原始雜亂筆記；after：整理後的筆記
-    // 每個科目各自有獨立的 before / after gallery
     const NOTES = [
-
       {
         subject: '生物',
         before: [
           'images/before-1.jpg',
           'images/before-2.jpg',
-          'images/before-3.jpg'  // 加圖就取消註解
+          'images/before-3.jpg'
         ],
         after: [
           'images/after-1.jpg',
-          'images/after-2.jpg',
+          'images/after-2.jpg'
         ],
-      },
-
-      // ── 之後要加的科目，取消整塊註解即可 ──
-
-      // {
-      //   subject: '國文',
-      //   before: ['images/chinese-before-1.jpg'],
-      //   after:  ['images/chinese-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '數學',
-      //   before: ['images/math-before-1.jpg'],
-      //   after:  ['images/math-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '英文',
-      //   before: ['images/english-before-1.jpg'],
-      //   after:  ['images/english-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '歷史',
-      //   before: ['images/history-before-1.jpg'],
-      //   after:  ['images/history-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '地理',
-      //   before: ['images/geo-before-1.jpg'],
-      //   after:  ['images/geo-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '化學',
-      //   before: ['images/chem-before-1.jpg'],
-      //   after:  ['images/chem-after-1.jpg'],
-      // },
-
-      // {
-      //   subject: '物理',
-      //   before: ['images/physics-before-1.jpg'],
-      //   after:  ['images/physics-after-1.jpg'],
-      // },
-
+      }
     ];
   </script>
 
-  <script>
-    const { useState, useRef, useEffect } = React;
+  <!-- 這裡加上 type="text/babel" 並重新啟用線上 Babel，來處理你寫的 HTML 標籤語法 (JSX) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-type="module">
+    import React, { useState, useRef, useEffect } from 'react';
+    import ReactDOM from 'react-dom/client';
 
     // ── 色票 ──────────────────────────────────────────
     const v1 = {
@@ -219,14 +179,12 @@
       };
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* 標籤 */}
           <div style={{
             alignSelf: 'flex-start', marginBottom: 12,
             background: labelColor, color: '#FFFDF6',
             padding: '5px 14px', fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
           }}>{label}</div>
 
-          {/* 圖片框（膠帶裝飾） */}
           <div style={{ position: 'relative', background: '#FFFDF6', padding: 12, flex: 1,
             boxShadow: '0 8px 24px rgba(60,45,20,0.14)', }}>
             <Tape style={{ top: -13, left: '30%', width: 80, height: 22, zIndex: 2 }}
@@ -241,7 +199,6 @@
             />
           </div>
 
-          {/* 翻頁控制 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
             <button
               onClick={() => setIdx(i => i - 1)} disabled={!canPrev}
@@ -289,7 +246,6 @@
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div onClick={e => e.stopPropagation()} style={{ position: 'relative' }}>
-            {/* 上方控制列 */}
             <div style={{ position: 'absolute', top: -44, left: 0, right: 0,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(245,239,225,0.45)', fontSize: 12,
@@ -302,7 +258,6 @@
               }}>✕ 關閉</button>
             </div>
 
-            {/* 標籤 */}
             <div style={{
               position: 'absolute', top: -14, left: 16, zIndex: 3,
               background: lightbox.side === 'after' ? v1.accent : v1.inkSoft,
@@ -310,7 +265,6 @@
               fontSize: 11, fontWeight: 800, letterSpacing: '0.15em',
             }}>{lightbox.side === 'after' ? 'AFTER · 整理後' : 'BEFORE · 原始'}</div>
 
-            {/* 圖片容器 */}
             <div ref={wrapRef} style={{
               background: '#FFFDF6', padding: 12,
               boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
@@ -335,7 +289,7 @@
       const [subjectIdx, setSubjectIdx] = useState(0);
       const [beforeIdx, setBeforeIdx] = useState(0);
       const [afterIdx, setAfterIdx]   = useState(0);
-      const [lightbox, setLightbox]   = useState(null); // { src, side }
+      const [lightbox, setLightbox]   = useState(null);
 
       const subject = notes[subjectIdx];
 
@@ -343,7 +297,6 @@
 
       return (
         <div>
-          {/* 標題 */}
           <div style={{ marginBottom: 48 }}>
             <div style={{ fontFamily: '"Caveat", cursive', fontSize: 28, color: v1.accent,
               marginBottom: 4, transform: 'rotate(-2deg)', display: 'inline-block' }}>
@@ -354,11 +307,10 @@
               翻一翻學霸的<span style={{ background: `linear-gradient(180deg, transparent 60%, ${v1.accentYellow} 60%)` }}>真實筆記</span>
             </h2>
             <p style={{ color: v1.inkSoft, fontSize: 17, margin: 0, maxWidth: 520 }}>
-              左邊是原始教科書或參考書，右邊是整理後的版本。點圖可以放大看。
+              Left side is standard reading material, right side is the structured note. Click to zoom.
             </p>
           </div>
 
-          {/* 科目切換 tabs（超過一個科目才顯示） */}
           {notes.length > 1 && (
             <div style={{ display: 'flex', gap: 10, marginBottom: 36, flexWrap: 'wrap' }}>
               {notes.map((n, i) => (
@@ -374,7 +326,6 @@
             </div>
           )}
 
-          {/* 左右 Gallery */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
             <GalleryPanel
               label="BEFORE · 教科書或參考書"
@@ -394,7 +345,6 @@
             />
           </div>
 
-          {/* Lightbox */}
           {lightbox && <LightboxWithPanzoom lightbox={lightbox} onClose={() => setLightbox(null)} />}
         </div>
       );
@@ -407,7 +357,6 @@
         : '';
 
       useEffect(() => {
-        // Scroll reveal：所有 section 淡入
         const obs = new IntersectionObserver(
           entries => entries.forEach(e => {
             if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }
@@ -419,7 +368,6 @@
           obs.observe(el);
         });
 
-        // Sticky nav 陰影
         const onScroll = () => {
           const nav = document.querySelector('nav');
           if (nav) nav.style.boxShadow = window.scrollY > 40
@@ -489,7 +437,6 @@
                   你的筆記應該要<br/>
                   <span style={{ color: v1.accent, fontStyle: 'italic' }}>越寫越強</span>
                   <span style={{ position: 'relative' }}>
-                    
                     <svg width="340" height="14" viewBox="0 0 340 14" style={{ position: 'absolute', left: -4, bottom: -10 }}>
                       <path d="M4 9 C 80 2, 180 13, 336 7" fill="none" stroke={v1.accentYellow} strokeWidth="8" strokeLinecap="round"/>
                     </svg>
@@ -532,7 +479,7 @@
                 </div>
               </div>
 
-              {/* Hero 右側：疊起來的科目資料夾 */}
+              {/* Hero 右側 */}
               <div style={{ position: 'relative', height: 520 }}>
                 {[
                   { name: '國文', color: v1.accent },
@@ -665,7 +612,9 @@
                       <h3 style={{ fontFamily: '"Noto Serif TC", serif', fontSize: 26, fontWeight: 900, margin: '0 0 12px' }}>{s.title}</h3>
                       <p style={{ fontSize: 15, color: v1.inkSoft, lineHeight: 1.7, margin: 0 }}>{s.desc}</p>
                       <div style={{ position: 'absolute', bottom: 12, right: 16 }}>
-                        <HandWritten size={20} color={v1.accentBlue} rotate={-6}>{s.hand}</HandWritten>
+                        <div style={{ transform: 'rotate(-6deg)' }}>
+                          <HandWritten size={20} color={v1.accentBlue}>{s.hand}</HandWritten>
+                        </div>
                       </div>
                     </div>
                     {i < 3 && (
@@ -774,8 +723,9 @@
     }
 
     // ── Render ──
-    ReactDOM.createRoot(document.getElementById('root')).render(
-      React.createElement(LandingV1, { formUrl: FORM_URL, ytUrl: YT_URL })
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      <LandingV1 formUrl={FORM_URL} ytUrl={YT_URL} />
     );
   </script>
 </body>
